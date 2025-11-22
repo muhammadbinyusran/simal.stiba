@@ -1,0 +1,1641 @@
+<!doctype html>
+<html lang="id">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Pengontrolan Alumni</title>
+  <script src="/_sdk/data_sdk.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      height: 100%;
+      overflow: hidden;
+    }
+    html {
+      height: 100%;
+    }
+    .app-container {
+      display: flex;
+      height: 100%;
+      width: 100%;
+    }
+    .sidebar {
+      width: 280px;
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      color: white;
+      padding: 0;
+      overflow-y: auto;
+      flex-shrink: 0;
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+      transition: transform 0.3s ease;
+    }
+    .sidebar-header {
+      padding: 30px 24px;
+      background: rgba(59, 130, 246, 0.1);
+      border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+      margin-bottom: 20px;
+    }
+    .sidebar-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0;
+      background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .sync-status {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sync-status.syncing {
+      color: #60a5fa;
+    }
+    .sync-status.success {
+      color: #10b981;
+    }
+    .sync-icon {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .menu-item {
+      padding: 16px 24px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 4px 12px;
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .menu-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 4px;
+      background: #3b82f6;
+      transform: scaleY(0);
+      transition: transform 0.3s ease;
+    }
+    .menu-item:hover {
+      background: rgba(59, 130, 246, 0.15);
+      transform: translateX(4px);
+    }
+    .menu-item:hover::before {
+      transform: scaleY(1);
+    }
+    .menu-item.active {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    .menu-item.active::before {
+      transform: scaleY(1);
+      background: #60a5fa;
+    }
+    .menu-icon {
+      font-size: 18px;
+      width: 24px;
+      text-align: center;
+    }
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+    }
+    .content-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .content-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+    .card-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 24px 0;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .card-title i {
+      color: #3b82f6;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 28px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+      transition: transform 0.5s ease;
+    }
+    .stat-card:hover::before {
+      transform: translate(-25%, -25%);
+    }
+    .stat-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+    }
+    .stat-card.male {
+      background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    }
+    .stat-card.female {
+      background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+    }
+    .stat-label {
+      font-size: 15px;
+      opacity: 0.95;
+      margin-bottom: 12px;
+      font-weight: 500;
+      position: relative;
+      z-index: 1;
+    }
+    .stat-value {
+      font-size: 42px;
+      font-weight: 800;
+      position: relative;
+      z-index: 1;
+    }
+    .stat-icon {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      font-size: 48px;
+      opacity: 0.2;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 20px;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .data-table th {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      padding: 16px;
+      text-align: left;
+      font-weight: 600;
+      color: white;
+      border-bottom: none;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .data-table th:first-child {
+      border-top-left-radius: 12px;
+    }
+    .data-table th:last-child {
+      border-top-right-radius: 12px;
+    }
+    .data-table td {
+      padding: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      background: white;
+    }
+    .data-table tr:last-child td:first-child {
+      border-bottom-left-radius: 12px;
+    }
+    .data-table tr:last-child td:last-child {
+      border-bottom-right-radius: 12px;
+    }
+    .data-table tbody tr {
+      transition: all 0.2s ease;
+    }
+    .data-table tbody tr:hover {
+      background: #f0f9ff;
+      transform: scale(1.01);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #1e293b;
+      font-size: 14px;
+    }
+    .form-input, .form-select {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 15px;
+      box-sizing: border-box;
+      transition: all 0.3s ease;
+      background: #f8fafc;
+    }
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+      background: white;
+    }
+    .btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+    .btn-success:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+    .btn-secondary {
+      background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+      color: white;
+    }
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, #475569 0%, #334155 100%);
+    }
+    .wa-group-card {
+      background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+      color: white;
+      padding: 28px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    .wa-group-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+    }
+    .wa-group-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .login-container {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 40px 0;
+    }
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #10b981;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      animation: slideIn 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .toast.error {
+      background: #ef4444;
+    }
+    .toast.info {
+      background: #3b82f6;
+    }
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #ffffff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-left: 8px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #64748b;
+    }
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    .mobile-menu-toggle {
+      display: none;
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
+    .alumni-search {
+      margin-bottom: 20px;
+      padding: 14px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 15px;
+      width: 100%;
+      box-sizing: border-box;
+      background: #f8fafc;
+    }
+    .alumni-search:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+      background: white;
+    }
+    .alumni-list {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .alumni-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #e2e8f0;
+      transition: background 0.2s ease;
+    }
+    .alumni-item:hover {
+      background: #f0f9ff;
+    }
+    .alumni-item:last-child {
+      border-bottom: none;
+    }
+    .info-banner {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .info-banner i {
+      font-size: 24px;
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .pagination-info {
+      color: #64748b;
+      font-size: 14px;
+    }
+    @media (max-width: 1024px) {
+      .sidebar {
+        width: 260px;
+      }
+      .main-content {
+        padding: 24px;
+      }
+      .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+    }
+    @media (max-width: 768px) {
+      .mobile-menu-toggle {
+        display: block;
+      }
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        z-index: 1000;
+        transform: translateX(-100%);
+      }
+      .sidebar.active {
+        transform: translateX(0);
+      }
+      .overlay.active {
+        display: block;
+      }
+      .main-content {
+        padding: 80px 16px 16px;
+        margin-left: 0;
+      }
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      .content-card {
+        padding: 20px;
+      }
+      .card-title {
+        font-size: 22px;
+      }
+      .stat-value {
+        font-size: 32px;
+      }
+      .data-table {
+        font-size: 13px;
+      }
+      .data-table th,
+      .data-table td {
+        padding: 10px 8px;
+      }
+    }
+    @media (max-width: 480px) {
+      .main-content {
+        padding: 70px 12px 12px;
+      }
+      .card-title {
+        font-size: 20px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .stat-card {
+        padding: 20px;
+      }
+      .stat-value {
+        font-size: 28px;
+      }
+      .data-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+      .form-input, .form-select {
+        font-size: 16px;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+ </head>
+ <body><button class="mobile-menu-toggle" id="mobile-menu-btn"> <i class="fas fa-bars"></i> </button>
+  <div class="overlay" id="overlay"></div>
+  <div class="app-container">
+   <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+     <h1 class="sidebar-title" id="app-title-display">Sistem Alumni</h1>
+     <div class="sync-status" id="sync-status"><i class="fas fa-circle" style="font-size: 8px;"></i> <span>Menunggu sinkronisasi...</span>
+     </div>
+    </div>
+    <div class="menu-item active" data-page="beranda"><i class="fas fa-home menu-icon"></i> <span>Beranda</span>
+    </div>
+    <div class="menu-item" data-page="alumni"><i class="fas fa-users menu-icon"></i> <span>Alumni</span>
+    </div>
+    <div class="menu-item" data-page="iuran" id="menu-iuran" style="display: none;"><i class="fas fa-money-bill-wave menu-icon"></i> <span>Iuran</span>
+    </div>
+    <div class="menu-item" data-page="whatsapp"><i class="fab fa-whatsapp menu-icon"></i> <span>Group WhatsApp</span>
+    </div>
+    <div class="menu-item" data-page="update"><i class="fas fa-edit menu-icon"></i> <span>Update Data</span>
+    </div>
+    <div class="menu-item" data-page="login" id="menu-login"><i class="fas fa-lock menu-icon"></i> <span>Login Admin</span>
+    </div>
+    <div class="menu-item" data-page="logout" id="menu-logout" style="display: none;"><i class="fas fa-sign-out-alt menu-icon"></i> <span>Logout</span>
+    </div>
+   </div>
+   <div class="main-content" id="main-content"><!-- Content will be rendered here -->
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      background_color: "#f0f4f8",
+      surface_color: "#ffffff",
+      text_color: "#1e293b",
+      primary_color: "#3b82f6",
+      secondary_color: "#64748b",
+      font_family: "Segoe UI",
+      font_size: 16,
+      app_title: "Sistem Pengontrolan Alumni",
+      wa_group_laki: "https://chat.whatsapp.com/",
+      wa_group_perempuan: "https://chat.whatsapp.com/"
+    };
+
+    const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ5JJUefa5SyRbQO_OOt-onZTgZZ4xMz_41LlzuqMzkEOihsooLCQ_3pL_qA-IAeQozv0qLdrZcxkhH/pub?gid=998082677&single=true&output=csv';
+
+    let alumniData = [];
+    let pendingUpdates = [];
+    let currentPage = 'beranda';
+    let isAdmin = false;
+    let isLoading = false;
+    let lastSyncTime = null;
+    let alumniCurrentPage = 1;
+    let alumniPerPage = 20;
+    let alumniSearchQuery = '';
+
+    const dataHandler = {
+      onDataChanged(data) {
+        pendingUpdates = data;
+        renderCurrentPage();
+      }
+    };
+
+    async function initApp() {
+      const initResult = await window.dataSdk.init(dataHandler);
+      if (!initResult.isOk) {
+        showToast('Gagal menginisialisasi sistem', 'error');
+        return;
+      }
+
+      await window.elementSdk.init({
+        defaultConfig,
+        onConfigChange: async (config) => {
+          document.body.style.background = `linear-gradient(135deg, ${config.primary_color || defaultConfig.primary_color} 0%, ${config.secondary_color || defaultConfig.secondary_color} 100%)`;
+          
+          const mainContent = document.querySelector('.main-content');
+          if (mainContent) {
+            mainContent.style.background = config.background_color || defaultConfig.background_color;
+          }
+          
+          const cards = document.querySelectorAll('.content-card');
+          cards.forEach(card => {
+            card.style.background = config.surface_color || defaultConfig.surface_color;
+          });
+
+          const titles = document.querySelectorAll('.card-title');
+          titles.forEach(title => {
+            title.style.color = config.text_color || defaultConfig.text_color;
+          });
+
+          const customFont = config.font_family || defaultConfig.font_family;
+          const baseFontStack = 'Tahoma, Geneva, Verdana, sans-serif';
+          document.body.style.fontFamily = `${customFont}, ${baseFontStack}`;
+
+          const baseSize = config.font_size || defaultConfig.font_size;
+          document.body.style.fontSize = `${baseSize}px`;
+          
+          const sidebarTitle = document.querySelector('.sidebar-title');
+          if (sidebarTitle) {
+            sidebarTitle.style.fontSize = `${baseSize * 1.375}px`;
+          }
+          
+          const cardTitles = document.querySelectorAll('.card-title');
+          cardTitles.forEach(title => {
+            title.style.fontSize = `${baseSize * 1.75}px`;
+          });
+
+          const appTitleDisplay = document.getElementById('app-title-display');
+          if (appTitleDisplay) {
+            appTitleDisplay.textContent = config.app_title || defaultConfig.app_title;
+          }
+        },
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.background_color || defaultConfig.background_color,
+              set: (value) => {
+                if (window.elementSdk) {
+                  window.elementSdk.setConfig({ background_color: value });
+                }
+              }
+            },
+            {
+              get: () => config.surface_color || defaultConfig.surface_color,
+              set: (value) => {
+                if (window.elementSdk) {
+                  window.elementSdk.setConfig({ surface_color: value });
+                }
+              }
+            },
+            {
+              get: () => config.text_color || defaultConfig.text_color,
+              set: (value) => {
+                if (window.elementSdk) {
+                  window.elementSdk.setConfig({ text_color: value });
+                }
+              }
+            },
+            {
+              get: () => config.primary_color || defaultConfig.primary_color,
+              set: (value) => {
+                if (window.elementSdk) {
+                  window.elementSdk.setConfig({ primary_color: value });
+                }
+              }
+            },
+            {
+              get: () => config.secondary_color || defaultConfig.secondary_color,
+              set: (value) => {
+                if (window.elementSdk) {
+                  window.elementSdk.setConfig({ secondary_color: value });
+                }
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => config.font_family || defaultConfig.font_family,
+            set: (value) => {
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ font_family: value });
+              }
+            }
+          },
+          fontSizeable: {
+            get: () => config.font_size || defaultConfig.font_size,
+            set: (value) => {
+              if (window.elementSdk) {
+                window.elementSdk.setConfig({ font_size: value });
+              }
+            }
+          }
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["app_title", config.app_title || defaultConfig.app_title],
+          ["wa_group_laki", config.wa_group_laki || defaultConfig.wa_group_laki],
+          ["wa_group_perempuan", config.wa_group_perempuan || defaultConfig.wa_group_perempuan]
+        ])
+      });
+
+      setupMenuListeners();
+      await fetchGoogleSheetsData();
+      setInterval(fetchGoogleSheetsData, 30000);
+      renderCurrentPage();
+    }
+
+    async function fetchGoogleSheetsData() {
+      const syncStatus = document.getElementById('sync-status');
+      if (syncStatus) {
+        syncStatus.className = 'sync-status syncing';
+        syncStatus.innerHTML = '<i class="fas fa-sync sync-icon" style="font-size: 10px;"></i><span>Sinkronisasi...</span>';
+      }
+
+      try {
+        const response = await fetch(GOOGLE_SHEETS_CSV_URL);
+        const csvText = await response.text();
+        const parsedData = parseCSV(csvText);
+        alumniData = parsedData;
+        lastSyncTime = new Date();
+
+        if (syncStatus) {
+          syncStatus.className = 'sync-status success';
+          syncStatus.innerHTML = `<i class="fas fa-check-circle" style="font-size: 10px;"></i><span>Tersinkron (${formatTime(lastSyncTime)})</span>`;
+        }
+
+        renderCurrentPage();
+      } catch (error) {
+        console.error('Error fetching Google Sheets:', error);
+        if (syncStatus) {
+          syncStatus.className = 'sync-status';
+          syncStatus.innerHTML = '<i class="fas fa-exclamation-circle" style="font-size: 10px; color: #ef4444;"></i><span>Gagal sinkronisasi</span>';
+        }
+        showToast('Gagal mengambil data dari Google Sheets', 'error');
+      }
+    }
+
+    function parseCSV(csvText) {
+      const lines = csvText.split('\n').filter(line => line.trim());
+      if (lines.length <= 1) return [];
+
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const data = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = parseCSVLine(lines[i]);
+        if (values.length === headers.length) {
+          const row = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index].trim();
+          });
+          data.push(row);
+        }
+      }
+
+      return data;
+    }
+
+    function parseCSVLine(line) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
+    }
+
+    function formatTime(date) {
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+
+    function setupMenuListeners() {
+      const menuItems = document.querySelectorAll('.menu-item');
+      const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('overlay');
+
+      function closeMobileMenu() {
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+      }
+
+      if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', () => {
+          sidebar.classList.add('active');
+          overlay.classList.add('active');
+        });
+      }
+
+      if (overlay) {
+        overlay.addEventListener('click', closeMobileMenu);
+      }
+
+      menuItems.forEach(item => {
+        item.addEventListener('click', () => {
+          const page = item.dataset.page;
+          if (page === 'logout') {
+            handleLogout();
+            closeMobileMenu();
+            return;
+          }
+          if (page === 'iuran' && !isAdmin) {
+            showToast('Akses ditolak. Hanya admin yang bisa melihat data iuran.', 'error');
+            closeMobileMenu();
+            return;
+          }
+          
+          menuItems.forEach(mi => mi.classList.remove('active'));
+          item.classList.add('active');
+          currentPage = page;
+          alumniCurrentPage = 1;
+          alumniSearchQuery = '';
+          renderCurrentPage();
+          closeMobileMenu();
+        });
+      });
+    }
+
+    function renderCurrentPage() {
+      const content = document.getElementById('main-content');
+      
+      switch(currentPage) {
+        case 'beranda':
+          renderBeranda(content);
+          break;
+        case 'alumni':
+          renderAlumni(content);
+          break;
+        case 'iuran':
+          renderIuran(content);
+          break;
+        case 'whatsapp':
+          renderWhatsApp(content);
+          break;
+        case 'update':
+          renderUpdateData(content);
+          break;
+        case 'login':
+          renderLogin(content);
+          break;
+      }
+    }
+
+    function renderBeranda(content) {
+      const lakiCount = alumniData.filter(a => {
+        const jk = a['JENIS KELAMIN'] || a['Jenis Kelamin'] || a['jenis_kelamin'] || a['L/P'] || '';
+        return jk === 'Laki-laki' || jk === 'L';
+      }).length;
+      const perempuanCount = alumniData.filter(a => {
+        const jk = a['JENIS KELAMIN'] || a['Jenis Kelamin'] || a['jenis_kelamin'] || a['L/P'] || '';
+        return jk === 'Perempuan' || jk === 'P';
+      }).length;
+      const totalCount = lakiCount + perempuanCount;
+
+      const s2Count = alumniData.filter(a => {
+        const jenjang = a['JENJANG LANJUT STUDI'] || a['Jenjang Lanjut Studi'] || a['jenjang_lanjut_studi'] || '';
+        return jenjang.toUpperCase().includes('S2') || jenjang.toUpperCase().includes('S-2');
+      }).length;
+
+      const s3Count = alumniData.filter(a => {
+        const jenjang = a['JENJANG LANJUT STUDI'] || a['Jenjang Lanjut Studi'] || a['jenjang_lanjut_studi'] || '';
+        return jenjang.toUpperCase().includes('S3') || jenjang.toUpperCase().includes('S-3');
+      }).length;
+
+      content.innerHTML = `
+        <div class="info-banner">
+          <i class="fas fa-info-circle"></i>
+          <div>
+            <strong>Data Tersinkron dengan Google Sheets</strong><br>
+            <small>Data diperbarui otomatis setiap 30 detik dari spreadsheet Anda</small>
+          </div>
+        </div>
+        <div class="content-card">
+          <h2 class="card-title">
+            <i class="fas fa-chart-line"></i>
+            Dashboard Alumni
+          </h2>
+          <div class="stats-grid">
+            <div class="stat-card male">
+              <div class="stat-label">Alumni Laki-laki</div>
+              <div class="stat-value">${lakiCount}</div>
+              <i class="fas fa-male stat-icon"></i>
+            </div>
+            <div class="stat-card female">
+              <div class="stat-label">Alumni Perempuan</div>
+              <div class="stat-value">${perempuanCount}</div>
+              <i class="fas fa-female stat-icon"></i>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total Alumni</div>
+              <div class="stat-value">${totalCount}</div>
+              <i class="fas fa-users stat-icon"></i>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
+              <div class="stat-label">Lanjut Studi S2</div>
+              <div class="stat-value">${s2Count}</div>
+              <i class="fas fa-user-graduate stat-icon"></i>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);">
+              <div class="stat-label">Lanjut Studi S3</div>
+              <div class="stat-value">${s3Count}</div>
+              <i class="fas fa-user-graduate stat-icon"></i>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 24px;">
+            <div>
+              <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #1e293b;">
+                <i class="fas fa-venus-mars"></i> Distribusi Jenis Kelamin
+              </h3>
+              <canvas id="genderChart"></canvas>
+            </div>
+            <div>
+              <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #1e293b;">
+                <i class="fas fa-graduation-cap"></i> Distribusi Jenjang Studi Lanjut
+              </h3>
+              <canvas id="studyChart"></canvas>
+            </div>
+          </div>
+        </div>
+      `;
+
+      setTimeout(() => {
+        const genderCtx = document.getElementById('genderChart');
+        if (genderCtx) {
+          new Chart(genderCtx, {
+            type: 'doughnut',
+            data: {
+              labels: ['Laki-laki', 'Perempuan'],
+              datasets: [{
+                data: [lakiCount, perempuanCount],
+                backgroundColor: ['#3b82f6', '#ec4899']
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              plugins: {
+                legend: {
+                  position: 'bottom'
+                }
+              }
+            }
+          });
+        }
+
+        const studyCtx = document.getElementById('studyChart');
+        if (studyCtx) {
+          new Chart(studyCtx, {
+            type: 'doughnut',
+            data: {
+              labels: ['S2', 'S3'],
+              datasets: [{
+                data: [s2Count, s3Count],
+                backgroundColor: ['#8b5cf6', '#06b6d4']
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              plugins: {
+                legend: {
+                  position: 'bottom'
+                }
+              }
+            }
+          });
+        }
+      }, 100);
+    }
+
+    function renderAlumni(content) {
+      if (alumniData.length === 0) {
+        content.innerHTML = `
+          <div class="content-card">
+            <h2 class="card-title">
+              <i class="fas fa-users"></i>
+              Data Alumni
+            </h2>
+            <div class="empty-state">
+              <div class="empty-state-icon"><i class="fas fa-inbox" style="font-size: 48px; color: #cbd5e1;"></i></div>
+              <p>Belum ada data alumni di Google Sheets Anda.</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const filteredData = alumniSearchQuery 
+        ? alumniData.filter(alumni => {
+            const nama = (alumni['NAMA'] || alumni['Nama'] || alumni['nama'] || '').toLowerCase();
+            const nim = (alumni['NIM'] || alumni['nim'] || '').toString().toLowerCase();
+            const search = alumniSearchQuery.toLowerCase();
+            return nama.includes(search) || nim.includes(search);
+          })
+        : alumniData;
+
+      const totalPages = Math.ceil(filteredData.length / alumniPerPage);
+      const startIndex = (alumniCurrentPage - 1) * alumniPerPage;
+      const endIndex = startIndex + alumniPerPage;
+      const paginatedData = filteredData.slice(startIndex, endIndex);
+
+      content.innerHTML = `
+        <div class="content-card">
+          <h2 class="card-title">
+            <i class="fas fa-users"></i>
+            Data Alumni
+          </h2>
+          
+          <div class="form-group">
+            <label class="form-label" for="alumni-search-input">
+              <i class="fas fa-search"></i> Cari Alumni (Nama/NIM)
+            </label>
+            <input 
+              type="text" 
+              id="alumni-search-input" 
+              class="alumni-search" 
+              placeholder="Ketik nama atau NIM untuk mencari..." 
+              value="${alumniSearchQuery}"
+              oninput="handleAlumniSearch(this.value)">
+          </div>
+
+          ${filteredData.length === 0 ? `
+            <div class="empty-state">
+              <div class="empty-state-icon"><i class="fas fa-search" style="font-size: 48px; color: #cbd5e1;"></i></div>
+              <p>Tidak ada alumni yang cocok dengan pencarian "${alumniSearchQuery}"</p>
+            </div>
+          ` : `
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>NIM</th>
+                  <th>Nama</th>
+                  <th>Asal Daerah</th>
+                  <th>Jenis Kelamin</th>
+                  <th>Tahun Masuk</th>
+                  <th>Tahun Keluar</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${paginatedData.map(alumni => {
+                  const nim = alumni['NIM'] || alumni['nim'] || '-';
+                  const nama = alumni['NAMA'] || alumni['Nama'] || alumni['nama'] || '-';
+                  const asalDaerah = alumni['ASAL DAERAH'] || alumni['Asal Daerah'] || alumni['asal_daerah'] || alumni['Alamat'] || alumni['alamat'] || '-';
+                  const jk = alumni['JENIS KELAMIN'] || alumni['Jenis Kelamin'] || alumni['jenis_kelamin'] || alumni['L/P'] || '-';
+                  const jenisKelamin = jk === 'L' ? 'Laki-laki' : (jk === 'P' ? 'Perempuan' : jk);
+                  const tahunMasuk = alumni['TAHUN MASUK'] || alumni['Tahun Masuk'] || alumni['tahun_masuk'] || '-';
+                  const tahunKeluar = alumni['TAHUN KELUAR'] || alumni['Tahun Keluar'] || alumni['tahun_keluar'] || '-';
+                  
+                  return `
+                    <tr>
+                      <td>${nim}</td>
+                      <td>${nama}</td>
+                      <td>${asalDaerah}</td>
+                      <td>${jenisKelamin}</td>
+                      <td>${tahunMasuk}</td>
+                      <td>${tahunKeluar}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+
+            <div class="pagination">
+              <button 
+                class="btn btn-secondary" 
+                onclick="changePage(-1)" 
+                ${alumniCurrentPage === 1 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
+                <i class="fas fa-chevron-left"></i> Back
+              </button>
+              <span class="pagination-info">
+                Halaman ${alumniCurrentPage} dari ${totalPages} (${filteredData.length} data)
+              </span>
+              <button 
+                class="btn btn-secondary" 
+                onclick="changePage(1)" 
+                ${alumniCurrentPage === totalPages ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
+                Next <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function handleAlumniSearch(searchValue) {
+      alumniSearchQuery = searchValue;
+      alumniCurrentPage = 1;
+      renderCurrentPage();
+    }
+
+    function changePage(direction) {
+      const filteredData = alumniSearchQuery 
+        ? alumniData.filter(alumni => {
+            const nama = (alumni['NAMA'] || alumni['Nama'] || alumni['nama'] || '').toLowerCase();
+            const nim = (alumni['NIM'] || alumni['nim'] || '').toString().toLowerCase();
+            const search = alumniSearchQuery.toLowerCase();
+            return nama.includes(search) || nim.includes(search);
+          })
+        : alumniData;
+
+      const totalPages = Math.ceil(filteredData.length / alumniPerPage);
+      const newPage = alumniCurrentPage + direction;
+
+      if (newPage >= 1 && newPage <= totalPages) {
+        alumniCurrentPage = newPage;
+        renderCurrentPage();
+      }
+    }
+
+    function renderIuran(content) {
+      if (!isAdmin) {
+        content.innerHTML = `
+          <div class="content-card">
+            <h2 class="card-title">
+              <i class="fas fa-money-bill-wave"></i>
+              Data Iuran
+            </h2>
+            <div class="empty-state">
+              <div class="empty-state-icon"><i class="fas fa-lock" style="font-size: 48px; color: #cbd5e1;"></i></div>
+              <p>Akses ditolak. Hanya admin yang dapat melihat data iuran.</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (alumniData.length === 0) {
+        content.innerHTML = `
+          <div class="content-card">
+            <h2 class="card-title">
+              <i class="fas fa-money-bill-wave"></i>
+              Data Iuran Alumni
+            </h2>
+            <div class="empty-state">
+              <div class="empty-state-icon"><i class="fas fa-inbox" style="font-size: 48px; color: #cbd5e1;"></i></div>
+              <p>Belum ada data iuran alumni.</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      content.innerHTML = `
+        <div class="content-card">
+          <h2 class="card-title">
+            <i class="fas fa-money-bill-wave"></i>
+            Data Iuran Alumni
+          </h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nama</th>
+                <th>Status Iuran</th>
+                <th>Tanggal Bayar</th>
+                <th>Nominal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${alumniData.map(alumni => `
+                <tr>
+                  <td>${alumni['NAMA'] || alumni['Nama'] || alumni['nama'] || '-'}</td>
+                  <td>${alumni['Status Iuran'] || alumni['iuran_status'] || 'Belum Bayar'}</td>
+                  <td>${alumni['Tanggal Bayar'] || alumni['iuran_tanggal'] || '-'}</td>
+                  <td>${alumni['Nominal'] || alumni['iuran_nominal'] || '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderWhatsApp(content) {
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      const waLaki = config.wa_group_laki || defaultConfig.wa_group_laki;
+      const waPerempuan = config.wa_group_perempuan || defaultConfig.wa_group_perempuan;
+
+      content.innerHTML = `
+        <div class="content-card">
+          <h2 class="card-title">
+            <i class="fab fa-whatsapp"></i>
+            Group WhatsApp Alumni
+          </h2>
+          <p style="margin-bottom: 24px; color: #64748b;">Bergabunglah dengan group WhatsApp alumni sesuai kategori Anda</p>
+          
+          <div class="wa-group-card" onclick="window.open('${waLaki}', '_blank', 'noopener,noreferrer')">
+            <div class="wa-group-title">
+              <i class="fab fa-whatsapp"></i>
+              Group Alumni Laki-laki
+            </div>
+            <p style="margin: 0; opacity: 0.9;">Klik untuk bergabung dengan group WhatsApp alumni laki-laki</p>
+          </div>
+
+          <div class="wa-group-card" onclick="window.open('${waPerempuan}', '_blank', 'noopener,noreferrer')">
+            <div class="wa-group-title">
+              <i class="fab fa-whatsapp"></i>
+              Group Alumni Perempuan
+            </div>
+            <p style="margin: 0; opacity: 0.9;">Klik untuk bergabung dengan group WhatsApp alumni perempuan</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderUpdateData(content) {
+      let fieldOptions = '<option value="">-- Pilih Field --</option>';
+      
+      if (alumniData.length > 0) {
+        const firstAlumni = alumniData[0];
+        const headers = Object.keys(firstAlumni);
+        
+        const excludedFields = ['NIM', 'nim', 'TAHUN MASUK', 'Tahun Masuk', 'tahun_masuk', 'TAHUN KELUAR', 'Tahun Keluar', 'tahun_keluar'];
+        
+        headers.forEach(header => {
+          if (header && header.trim() && !excludedFields.includes(header)) {
+            fieldOptions += `<option value="${header}">${header}</option>`;
+          }
+        });
+      }
+      
+      content.innerHTML = `
+        <div class="content-card">
+          <h2 class="card-title">
+            <i class="fas fa-edit"></i>
+            Update Data Alumni
+          </h2>
+          <div class="info-banner" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+              <strong>Perhatian!</strong><br>
+              <small>Update data akan tersimpan sebagai "Pending Update" karena Google Sheets tidak bisa diubah langsung dari aplikasi web. Admin perlu memperbarui Google Sheets secara manual.</small>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="alumni-search">
+              <i class="fas fa-search"></i> Cari Alumni (Nama/NIM)
+            </label>
+            <input type="text" id="alumni-search" class="alumni-search" placeholder="Ketik nama atau NIM alumni untuk mencari..." oninput="filterAlumniForUpdate(this.value)">
+          </div>
+
+          <div id="search-results"></div>
+
+          <form id="update-form" onsubmit="handleUpdateSubmit(event)" style="display: none; margin-top: 24px; padding-top: 24px; border-top: 2px solid #e2e8f0;">
+            <input type="hidden" id="selected-alumni-index">
+            
+            <div class="form-group" style="background: #f0f9ff; padding: 16px; border-radius: 10px; border: 2px solid #3b82f6;">
+              <label class="form-label">
+                <i class="fas fa-user"></i> Alumni Terpilih
+              </label>
+              <div id="selected-alumni-info" style="font-weight: 600; color: #1e293b; font-size: 16px;">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="update-field">
+                <i class="fas fa-list"></i> Pilih Data yang Ingin Diupdate
+              </label>
+              <select id="update-field" class="form-select" required onchange="showCurrentValue()">
+                ${fieldOptions}
+              </select>
+            </div>
+
+            <div class="form-group" id="current-value-container" style="display: none;">
+              <label class="form-label">
+                <i class="fas fa-info-circle"></i> Nilai Saat Ini
+              </label>
+              <div id="current-value" style="background: #fef3c7; padding: 12px 16px; border-radius: 8px; font-weight: 500; color: #92400e; border: 1px solid #fde047;">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="update-value">
+                <i class="fas fa-edit"></i> Nilai Baru
+              </label>
+              <input type="text" id="update-value" class="form-input" placeholder="Masukkan nilai baru..." required>
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+              <button type="submit" class="btn btn-primary" id="update-btn">
+                <i class="fas fa-save"></i>
+                Simpan Update
+              </button>
+              <button type="button" class="btn btn-secondary" onclick="cancelUpdate()">
+                <i class="fas fa-times"></i>
+                Batal
+              </button>
+            </div>
+          </form>
+
+          ${pendingUpdates.length > 0 ? `
+            <div style="margin-top: 32px; padding-top: 32px; border-top: 2px solid #e2e8f0;">
+              <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 16px; color: #1e293b;">
+                <i class="fas fa-clock" style="color: #f59e0b;"></i>
+                Pending Updates (${pendingUpdates.length})
+              </h3>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Alumni</th>
+                    <th>Field</th>
+                    <th>Nilai Lama</th>
+                    <th>Nilai Baru</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${pendingUpdates.map(update => `
+                    <tr>
+                      <td>${update.alumni_id}</td>
+                      <td>${update.field_name}</td>
+                      <td><span style="color: #64748b; text-decoration: line-through;">${update.old_value || '-'}</span></td>
+                      <td><strong style="color: #059669;">${update.new_value}</strong></td>
+                      <td><span style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">${update.status}</span></td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function filterAlumniForUpdate(searchText) {
+      const searchResults = document.getElementById('search-results');
+      const updateForm = document.getElementById('update-form');
+      
+      if (!searchText || searchText.trim() === '') {
+        searchResults.innerHTML = '';
+        updateForm.style.display = 'none';
+        return;
+      }
+
+      const filteredData = alumniData.filter(alumni => {
+        const nama = (alumni['NAMA'] || alumni['Nama'] || alumni['nama'] || '').toLowerCase();
+        const nim = (alumni['NIM'] || alumni['nim'] || '').toString().toLowerCase();
+        const search = searchText.toLowerCase();
+        return nama.includes(search) || nim.includes(search);
+      });
+
+      if (filteredData.length === 0) {
+        searchResults.innerHTML = '<div style="padding: 20px; text-align: center; color: #94a3b8; background: #f8fafc; border-radius: 10px; border: 2px dashed #e2e8f0;"><i class="fas fa-search" style="font-size: 24px; margin-bottom: 8px;"></i><br>Tidak ada alumni yang cocok dengan pencarian</div>';
+        updateForm.style.display = 'none';
+      } else {
+        searchResults.innerHTML = `
+          <div style="background: #f8fafc; border-radius: 10px; border: 2px solid #e2e8f0; overflow: hidden; margin-bottom: 20px;">
+            <div style="padding: 12px 16px; background: #3b82f6; color: white; font-weight: 600;">
+              <i class="fas fa-search"></i> Hasil Pencarian (${filteredData.length} alumni ditemukan)
+            </div>
+            <div style="max-height: 300px; overflow-y: auto;">
+              ${filteredData.map((alumni, index) => {
+                const originalIndex = alumniData.findIndex(a => a === alumni);
+                const namaField = alumni['NAMA'] || alumni['Nama'] || alumni['nama'] || 'Tanpa Nama';
+                const nimField = alumni['NIM'] || alumni['nim'] || 'Tanpa NIM';
+                return `
+                  <div class="alumni-item" onclick="selectAlumni(${originalIndex})" style="cursor: pointer; border-bottom: 1px solid #e2e8f0; background: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <div>
+                        <strong style="color: #1e293b;">${namaField}</strong><br>
+                        <small style="color: #64748b;"><i class="fas fa-id-card"></i> NIM: ${nimField}</small>
+                      </div>
+                      <button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;">
+                        <i class="fas fa-check"></i> Pilih
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+        updateForm.style.display = 'none';
+      }
+    }
+
+    function selectAlumni(index) {
+      const alumni = alumniData[index];
+      const namaField = alumni['NAMA'] || alumni['Nama'] || alumni['nama'] || 'Tanpa Nama';
+      const nimField = alumni['NIM'] || alumni['nim'] || 'Tanpa NIM';
+
+      document.getElementById('selected-alumni-index').value = index;
+      document.getElementById('selected-alumni-info').innerHTML = `${namaField} (NIM: ${nimField})`;
+      document.getElementById('update-form').style.display = 'block';
+      document.getElementById('update-field').value = '';
+      document.getElementById('update-value').value = '';
+      
+      const currentValueContainer = document.getElementById('current-value-container');
+      if (currentValueContainer) {
+        currentValueContainer.style.display = 'none';
+      }
+
+      document.getElementById('update-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function showCurrentValue() {
+      const indexInput = document.getElementById('selected-alumni-index');
+      const fieldSelect = document.getElementById('update-field');
+      
+      if (!indexInput || !fieldSelect) return;
+      
+      const index = indexInput.value;
+      const field = fieldSelect.value;
+      
+      if (index !== '' && field !== '') {
+        const alumni = alumniData[index];
+        const currentValue = alumni[field] || '(kosong)';
+        
+        const currentValueContainer = document.getElementById('current-value-container');
+        const currentValueDiv = document.getElementById('current-value');
+        
+        if (currentValueContainer && currentValueDiv) {
+          currentValueContainer.style.display = 'block';
+          currentValueDiv.textContent = currentValue;
+        }
+        
+        const updateValueInput = document.getElementById('update-value');
+        if (updateValueInput) {
+          updateValueInput.value = '';
+          updateValueInput.focus();
+        }
+      } else {
+        const currentValueContainer = document.getElementById('current-value-container');
+        if (currentValueContainer) {
+          currentValueContainer.style.display = 'none';
+        }
+      }
+    }
+
+    function cancelUpdate() {
+      document.getElementById('update-form').style.display = 'none';
+      document.getElementById('update-form').reset();
+      document.getElementById('alumni-search').value = '';
+      document.getElementById('search-results').innerHTML = '';
+      
+      const currentValueContainer = document.getElementById('current-value-container');
+      if (currentValueContainer) {
+        currentValueContainer.style.display = 'none';
+      }
+    }
+
+    async function handleUpdateSubmit(event) {
+      event.preventDefault();
+      
+      if (isLoading) return;
+      
+      if (pendingUpdates.length >= 999) {
+        showToast('Maksimum 999 pending updates telah tercapai. Hapus beberapa update terlebih dahulu.', 'error');
+        return;
+      }
+
+      isLoading = true;
+      const updateBtn = document.getElementById('update-btn');
+      updateBtn.disabled = true;
+      updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+      const indexInput = document.getElementById('selected-alumni-index');
+      const index = indexInput.value;
+      const alumni = alumniData[index];
+      const fieldName = document.getElementById('update-field').value;
+      const newValue = document.getElementById('update-value').value;
+      const currentValue = alumni[fieldName] || '(kosong)';
+
+      const namaField = alumni['NAMA'] || alumni['Nama'] || alumni['nama'] || `Alumni-${index}`;
+      const nimField = alumni['NIM'] || alumni['nim'] || 'Tanpa NIM';
+
+      const updateData = {
+        alumni_id: `${namaField} (${nimField})`,
+        field_name: fieldName,
+        old_value: currentValue,
+        new_value: newValue,
+        status: 'Pending',
+        updated_at: new Date().toISOString()
+      };
+
+      const result = await window.dataSdk.create(updateData);
+      
+      isLoading = false;
+      updateBtn.disabled = false;
+      updateBtn.innerHTML = '<i class="fas fa-save"></i> Simpan Update';
+
+      if (result.isOk) {
+        showToast('✅ Update berhasil disimpan sebagai pending!', 'success');
+        document.getElementById('update-form').reset();
+        document.getElementById('alumni-search').value = '';
+        document.getElementById('search-results').innerHTML = '';
+        document.getElementById('update-form').style.display = 'none';
+        const currentValueContainer = document.getElementById('current-value-container');
+        if (currentValueContainer) {
+          currentValueContainer.style.display = 'none';
+        }
+      } else {
+        showToast('❌ Gagal menyimpan update. Silakan coba lagi.', 'error');
+      }
+    }
+
+    function renderLogin(content) {
+      content.innerHTML = `
+        <div class="login-container">
+          <div class="content-card">
+            <h2 class="card-title" style="text-align: center; justify-content: center;">
+              <i class="fas fa-lock"></i>
+              Login Admin
+            </h2>
+            <form id="login-form" onsubmit="handleLogin(event)">
+              <div class="form-group">
+                <label class="form-label" for="username">
+                  <i class="fas fa-user"></i> Username
+                </label>
+                <input type="text" id="username" class="form-input" required>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label" for="password">
+                  <i class="fas fa-key"></i> Password
+                </label>
+                <input type="password" id="password" class="form-input" required>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width: 100%;" id="login-btn">
+                <i class="fas fa-sign-in-alt"></i>
+                Login
+              </button>
+            </form>
+            <p style="margin-top: 16px; text-align: center; color: #64748b; font-size: 14px;">
+              <i class="fas fa-info-circle"></i> Demo: username "admin", password "admin123"
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    function handleLogin(event) {
+      event.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      if (username === 'admin' && password === 'admin123') {
+        isAdmin = true;
+        document.getElementById('menu-iuran').style.display = 'flex';
+        document.getElementById('menu-login').style.display = 'none';
+        document.getElementById('menu-logout').style.display = 'flex';
+        showToast('Login berhasil! Selamat datang, Admin.');
+        currentPage = 'beranda';
+        document.querySelectorAll('.menu-item').forEach(mi => mi.classList.remove('active'));
+        document.querySelector('[data-page="beranda"]').classList.add('active');
+        renderCurrentPage();
+      } else {
+        showToast('Username atau password salah!', 'error');
+      }
+    }
+
+    function handleLogout() {
+      isAdmin = false;
+      document.getElementById('menu-iuran').style.display = 'none';
+      document.getElementById('menu-login').style.display = 'flex';
+      document.getElementById('menu-logout').style.display = 'none';
+      showToast('Logout berhasil.');
+      currentPage = 'beranda';
+      document.querySelectorAll('.menu-item').forEach(mi => mi.classList.remove('active'));
+      document.querySelector('[data-page="beranda"]').classList.add('active');
+      renderCurrentPage();
+    }
+
+    function showToast(message, type = 'success') {
+      const existingToast = document.querySelector('.toast');
+      if (existingToast) {
+        existingToast.remove();
+      }
+
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      
+      let icon = 'fa-check-circle';
+      if (type === 'error') icon = 'fa-exclamation-circle';
+      if (type === 'info') icon = 'fa-info-circle';
+      
+      toast.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a296b1a80e724d2',t:'MTc2MzgyNDkwNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
